@@ -135,34 +135,42 @@ class MasterWindowClass(Tk): #overarching Tkinter window class to hold both fram
 
     def createModeButtonFrame(self):
         """
-        Configures a completely fluid, responsive canvas area.
-        Elements scale up and down dynamically based on the current window size.
+        Configures the main responsive canvas area with functioning 
+        vertical and horizontal scrollbars.
         """
-        # Create a completely fluid content canvas with no hardcoded pixel limits
+        # Create a fluid content canvas with no hardcoded pixel limits
         self.modeCanvas = Canvas(self)
         self.modeCanvas.grid(row=0, column=0, sticky='nsew')
         
-        # Configure window weights so the panel expands and contracts responsively
+        # Configure window weights so the main canvas stretches dynamically
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         
-        # Seamlessly link the scrollbar tracking
+        # 1. Vertical Scrollbar (Right Edge)
         modeScrollBarY = ttk.Scrollbar(self, orient='vertical', command=self.modeCanvas.yview)
-        modeScrollBarY.grid(row=0, column=1, sticky='ns') # Delete or comment out this line if you want to hide the bar for touchscreens!
-        self.modeCanvas.configure(yscrollcommand=modeScrollBarY.set)
+        modeScrollBarY.grid(row=0, column=1, sticky='ns')
+        
+        # 2. Horizontal Scrollbar (Bottom Edge)
+        modeScrollBarX = ttk.Scrollbar(self, orient='horizontal', command=self.modeCanvas.xview)
+        modeScrollBarX.grid(row=1, column=0, sticky='ew')
+        
+        # Link both scrollbars to the canvas framework
+        self.modeCanvas.configure(yscrollcommand=modeScrollBarY.set, xscrollcommand=modeScrollBarX.set)
 
         # Content frame inside the canvas
         self.ModeCanvasFrame = Frame(self.modeCanvas, bd=2, relief='solid', padx=5)
         self.canvasWindow = self.modeCanvas.create_window((0, 0),
                              window=self.ModeCanvasFrame, anchor="nw")
         
-        # Continuously monitor window resizing events to update boundaries
-        self.ModeCanvasFrame.bind("<Configure>", lambda e:
-                             self.modeCanvas.configure(scrollregion=self.modeCanvas.bbox("all")))
+        def update_scroll_region(event):
+            # Calculate total bounding box area of elements
+            bbox = self.modeCanvas.bbox("all")
+            # Set scroll region with a tiny extra padding safety net so things move smoothly
+            self.modeCanvas.configure(scrollregion=(bbox[0], bbox[1], bbox[2] + 20, bbox[3] + 20))
+
+        # Continuously monitor inner frame resizing events to unlock scrollbars
+        self.ModeCanvasFrame.bind("<Configure>", update_scroll_region)
         
-        # Dynamic tracking: Tells the inner frame to exactly mirror the canvas width as it scales
-        self.modeCanvas.bind("<Configure>", lambda e:
-                             self.modeCanvas.itemconfig(self.canvasWindow, width=e.width))
         
 
     def getCanvas(self) -> BaseCanvas:
